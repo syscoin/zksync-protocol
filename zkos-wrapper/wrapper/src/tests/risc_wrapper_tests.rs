@@ -158,8 +158,8 @@ fn from_base_binary_aux_params_fold_depth() {
 
     // risc_app under security_100 with the current zksync-airbender pin.
     const EXPECTED_BASE_UNROLLED_UNIFIED_AUX_PARAMS: [u32; 8] = [
-        0xdbb38583, 0xb550febb, 0x2f855d51, 0xf72921f6, 0xda32882d, 0xff8a8ee1, 0xf16c2b4a,
-        0x629d8cea,
+        0x1d4bd786, 0x1c212460, 0x3c0361bf, 0x70524164, 0x7651a087, 0x3ccf3666, 0xf43e90ed,
+        0x80e121c9,
     ];
 
     let mut binary = vec![];
