@@ -569,7 +569,8 @@ impl SnarkWrapper {
             .snark_vk(&self.config.trusted_setup, compression_vk)
     }
 
-    fn binary_commitment(&mut self) -> anyhow::Result<BinaryCommitment> {
+    /// Resolves the same commitment used by the wrapper and caches its derivation.
+    pub fn binary_commitment(&mut self) -> anyhow::Result<BinaryCommitment> {
         if let Some(binary_commitment) = self.binary_commitment {
             return Ok(binary_commitment);
         }

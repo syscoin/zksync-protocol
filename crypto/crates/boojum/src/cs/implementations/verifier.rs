@@ -2041,6 +2041,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
                 num_queries,
                 proof.queries_per_fri_repetition.len(),
             );
+            return false;
         }
 
         let base_oracle_depth = vk.fixed_parameters.base_oracles_depth();

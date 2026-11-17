@@ -1,5 +1,4 @@
 use anyhow::Context as _;
-use bellman::rand;
 use proof_compression::{
     PlonkSnarkWrapperLogN, ProofSystemDefinition, SnarkWrapperProofSystem,
     hardcoded_canonical_g2_bases,
@@ -204,7 +203,7 @@ pub(crate) fn gpu_snark_prove_with_manager(
         tracing::info!("using zk (padding) proving");
         const NUM_PADDING_TERMS: usize = 2 + 2 + 2; // worst case witness polys are opened at 2 points, plus there are
         // indirect openings of grand product for permutation and for lookup
-        let mut rng = rand::rngs::OsRng;
+        let mut rng = crate::buffered_os_rng::BufferedOsRng::new();
         proving_assembly.finalize_to_size_log_2_with_randomization(
             finalization_hint.trailing_zeros() as usize,
             NUM_PADDING_TERMS,

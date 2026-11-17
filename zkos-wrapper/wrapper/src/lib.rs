@@ -9,6 +9,7 @@ compile_error!("features `security_80` and `security_100` are mutually exclusive
 #[cfg(all(not(feature = "security_80"), not(feature = "security_100")))]
 compile_error!("one of `security_80` or `security_100` must be enabled");
 
+mod buffered_os_rng;
 pub mod circuits;
 mod inner_verifiers;
 pub mod interface;
@@ -26,7 +27,6 @@ use boojum::cs::implementations::witness;
 use boojum::field::U64Representable;
 pub use unified_reduced_machine_verifier as risc_verifier;
 
-use bellman::rand;
 use boojum::algebraic_props::round_function::AbsorptionModeOverwrite;
 use boojum::algebraic_props::sponge::GoldilocksPoseidon2Sponge;
 use boojum::config::{ProvingCSConfig, SetupCSConfig};
@@ -248,6 +248,9 @@ pub fn prove_risc_wrapper(
 }
 
 pub fn verify_risc_wrapper_proof(proof: &RiscWrapperProof, vk: &RiscWrapperVK) -> bool {
+    if proof.proof_config != RiscWrapper::get_proof_config() {
+        return false;
+    }
     let verifier_builder = RiscWrapperCircuitBuilder::dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
     verifier.verify::<RiscWrapperTreeHasher, RiscWrapperTranscript, NoPow>((), vk, proof)
@@ -350,6 +353,9 @@ pub fn prove_compression(
 }
 
 pub fn verify_compression_proof(proof: &CompressionProof, vk: &CompressionVK) -> bool {
+    if proof.proof_config != CompressionCircuit::get_proof_config() {
+        return false;
+    }
     let verifier_builder = CompressionCircuitBuilder::dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
     verifier.verify::<CompressionTreeHasher, CompressionTranscript, NoPow>((), vk, proof)
@@ -443,7 +449,7 @@ pub fn prove_snark_wrapper(
         tracing::info!("using zk (padding) proving");
         const NUM_PADDING_TERMS: usize = 2 + 2 + 2; // worst case witness polys are opened at 2 points, plus there are
         // indirect openings of grand product for permutation and for lookup
-        let mut rng = rand::rngs::OsRng;
+        let mut rng = crate::buffered_os_rng::BufferedOsRng::new();
         assembly.finalize_to_size_log_2_with_randomization(
             L1_VERIFIER_DOMAIN_SIZE_LOG,
             NUM_PADDING_TERMS,
