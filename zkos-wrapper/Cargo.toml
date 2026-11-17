@@ -53,21 +53,21 @@ snark_wrapper = { path = "../crypto/crates/snark-wrapper" }
 unified_reduced_machine_verifier = { git = "https://github.com/syscoin/zksync-airbender", package = "unified_reduced_machine_verifier", features = [
   "proof_utils",
   "blake2_with_compression",
-], default-features = false, rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
+], default-features = false, rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
 blake_verifier = { git = "https://github.com/syscoin/zksync-airbender", package = "blake2_with_compression_verifier", features = [
   "proof_utils",
   "blake2_with_compression",
-], default-features = false, rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
+], default-features = false, rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
 execution_utils = { git = "https://github.com/syscoin/zksync-airbender", package = "execution_utils", features = [
   "prover",
   "verifier_binaries",
-], default-features = false, rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
-setups = { git = "https://github.com/syscoin/zksync-airbender", package = "setups", rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
-mersenne_field = { git = "https://github.com/syscoin/zksync-airbender", package = "field", rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3", features = [
+], default-features = false, rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
+setups = { git = "https://github.com/syscoin/zksync-airbender", package = "setups", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
+mersenne_field = { git = "https://github.com/syscoin/zksync-airbender", package = "field", rev = "b2e348faa46070dd1144bb66724565f1238282b9", features = [
   "no_inline",
 ] }
-zkos_verifier_generator = { git = "https://github.com/syscoin/zksync-airbender", package = "verifier_generator", rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
-prover = { git = "https://github.com/syscoin/zksync-airbender", package = "prover", rev = "c16bac6a21bea3f40a9a0a4b33ab76fba00f48e3" }
+zkos_verifier_generator = { git = "https://github.com/syscoin/zksync-airbender", package = "verifier_generator", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
+prover = { git = "https://github.com/syscoin/zksync-airbender", package = "prover", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
 
 # unified_reduced_machine_verifier = { path = "../zksync-airbender/circuit_defs/unrolled_circuits/unified_reduced_machine/verifier", features = [
 #     "proof_utils", "blake2_with_compression"
