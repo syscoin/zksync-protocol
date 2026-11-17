@@ -168,6 +168,8 @@ struct SetupCacheManifest {
     wrapper_version: String,
     backend: String,
     security_model: String,
+    /// Identifies the two embedded recursion programs even when the app binary is unchanged.
+    recursion_end_params: [[u32; 8]; 2],
     l1_verifier_domain_size_log: usize,
     /// The phase-1 circuit bakes this flag in, so it moves the whole VK chain.
     check_aux_params: bool,
@@ -197,12 +199,19 @@ fn manifest_identity(
     // With a pinned commitment the files are never read (and may be absent), so the
     // binary identity is the commitment itself; hash the files only when they are
     // what the commitment will be derived from.
+    use execution_utils::{RecursionLayer, verifier_binaries::recursion_end_params};
+
+    let security = crate::active_security::ACTIVE_SECURITY_MODEL;
     let hash_binaries = config.check_aux_params && config.binary_commitment.is_none();
     Ok(SetupCacheManifest {
         format_version: SETUP_CACHE_FORMAT_VERSION,
         wrapper_version: env!("CARGO_PKG_VERSION").to_string(),
         backend: if cfg!(feature = "gpu") { "gpu" } else { "cpu" }.to_string(),
-        security_model: format!("{:?}", crate::active_security::ACTIVE_SECURITY_MODEL),
+        security_model: format!("{security:?}"),
+        recursion_end_params: [
+            recursion_end_params(security, RecursionLayer::Unrolled),
+            recursion_end_params(security, RecursionLayer::Unified),
+        ],
         l1_verifier_domain_size_log: crate::L1_VERIFIER_DOMAIN_SIZE_LOG,
         check_aux_params: config.check_aux_params,
         bin_sha3: if hash_binaries {
@@ -334,6 +343,7 @@ impl SnarkWrapperHostCache {
             && manifest.wrapper_version == expected.wrapper_version
             && manifest.backend == expected.backend
             && manifest.security_model == expected.security_model
+            && manifest.recursion_end_params == expected.recursion_end_params
             && manifest.l1_verifier_domain_size_log == expected.l1_verifier_domain_size_log
             && manifest.check_aux_params == expected.check_aux_params
             && same_binary;
@@ -669,9 +679,6 @@ fn load_binary_commitment(
 mod tests {
     use super::*;
 
-    // The small base program shipped with the repo's testing data. Loading its
-    // commitment still computes the recursion-layer setups (minutes in debug,
-    // ~3 min in release — same cost as the from_base_binary tests CI runs).
     const RISC_PROGRAM_BIN_PATH: &str = "testing_data/risc_app.bin";
     const RISC_PROGRAM_TEXT_PATH: &str = "testing_data/risc_app.text";
 
@@ -682,6 +689,22 @@ mod tests {
             check_aux_params: true,
             ..SnarkWrapperConfig::default()
         }
+    }
+
+    #[test]
+    fn snapshot_skips_other_recursion_programs_before_loading_setups() {
+        let config = config_with_base_program();
+        let mut manifest = manifest_identity(&config, None).unwrap();
+        manifest.recursion_end_params[1][0] ^= 1;
+        let dir = tempfile::tempdir().unwrap();
+        let manifest_file =
+            std::fs::File::create(dir.path().join(SETUP_CACHE_MANIFEST_FILE)).unwrap();
+        serde_json::to_writer(manifest_file, &manifest).unwrap();
+        assert!(
+            SnarkWrapperHostCache::load_from_dir(dir.path(), config)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]
