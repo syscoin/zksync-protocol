@@ -76,6 +76,15 @@ pub(crate) mod active_security {
         crate::risc_verifier::verifier_common::SecurityModel::Security100;
 }
 
+/// Security model selected by this build for the embedded recursion programs.
+pub const fn binary_commitment_security_bits() -> u32 {
+    use risc_verifier::verifier_common::SecurityModel;
+    match active_security::ACTIVE_SECURITY_MODEL {
+        SecurityModel::Security80 => 80,
+        SecurityModel::Security100 => 100,
+    }
+}
+
 pub type GL = boojum::field::goldilocks::GoldilocksField;
 pub type GLExt2 = boojum::field::goldilocks::GoldilocksExt2;
 pub type RiscLeafInclusionVerifier = CircuitBlake2sForEverythingVerifier<GL>;
