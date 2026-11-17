@@ -114,7 +114,7 @@ airbender-crypto = { git = "https://github.com/matter-labs/airbender-platform", 
 # only. Same git source and rev as the airbender crates `airbender-platform` above
 # and `../zkos-wrapper/` pull, so there is one `execution_utils` in this
 # workspace's graph. Goes when the combiner is reachable through `airbender-host`.
-cli_lib = { package = "cli", git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9", default-features = false }
+cli_lib = { package = "cli", git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58", default-features = false }
 # Vendored into this repository, so these resolve through `../protocol/crates/`
 # rather than a git tag: a protocol change and the verifier change it forces land
 # in one commit, and CI builds the guest against the working tree.
@@ -173,10 +173,10 @@ debug = 0
 debug = 0
 
 [patch."https://github.com/matter-labs/zksync-airbender"]
-blake2s_u32 = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-common_constants = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-execution_utils = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-gpu_prover = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-riscv_transpiler = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-verifier_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
-riscv_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "b2e348faa46070dd1144bb66724565f1238282b9" }
+blake2s_u32 = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+common_constants = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+execution_utils = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+gpu_prover = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+riscv_transpiler = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+verifier_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
+riscv_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "d8965007df1bd7f11a5279a10fe36bbfebaaac58" }
