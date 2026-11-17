@@ -55,7 +55,9 @@ use boojum::gadgets::tables::create_range_check_16_bits_table;
 use risc_verifier::prover::prover_stages::Proof as RiscProof;
 use risc_verifier::prover::prover_stages::unrolled_prover::UnrolledModeProof as RiscUnrolledProof;
 
-use execution_utils::{RecursionLayer, unrolled::UnrolledProgramProof, verifier_binaries::recursion_end_params};
+use execution_utils::{
+    RecursionLayer, unrolled::UnrolledProgramProof, verifier_binaries::recursion_end_params,
+};
 
 const NUM_RISC_WRAPPER_PUBLIC_INPUTS: usize = 4;
 
@@ -110,14 +112,16 @@ impl BinaryCommitment {
         use risc_verifier::prover::riscv_transpiler::cycle::IWithoutByteAccessIsaConfigWithDelegation;
 
         let base = base_end_params(base_bin, base_text);
-        let unrolled = compute_setup_for_machine_configuration::<IWithoutByteAccessIsaConfigWithDelegation>(
-            &padded_program(unrolled_bin),
-            &padded_program(unrolled_text),
-        ).end_params;
-        let unified = compute_unified_setup_for_machine_configuration::<IWithoutByteAccessIsaConfigWithDelegation>(
-            &padded_program(unified_bin),
-            &padded_program(unified_text),
-        ).end_params;
+        let unrolled =
+            compute_setup_for_machine_configuration::<IWithoutByteAccessIsaConfigWithDelegation>(
+                &padded_program(unrolled_bin),
+                &padded_program(unrolled_text),
+            )
+            .end_params;
+        let unified = compute_unified_setup_for_machine_configuration::<
+            IWithoutByteAccessIsaConfigWithDelegation,
+        >(&padded_program(unified_bin), &padded_program(unified_text))
+        .end_params;
         Self::from_layer_end_params(base, unrolled, unified)
     }
 
@@ -147,7 +151,10 @@ impl BinaryCommitment {
 impl Default for BinaryCommitment {
     fn default() -> Self {
         Self {
-            end_params: recursion_end_params(crate::active_security::ACTIVE_SECURITY_MODEL, RecursionLayer::Unified),
+            end_params: recursion_end_params(
+                crate::active_security::ACTIVE_SECURITY_MODEL,
+                RecursionLayer::Unified,
+            ),
             aux_params: [0u32; 8],
         }
     }

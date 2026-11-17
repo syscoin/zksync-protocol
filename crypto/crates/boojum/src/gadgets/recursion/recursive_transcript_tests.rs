@@ -37,20 +37,16 @@ impl CircuitTranscript<F> for FixedTranscript {
     }
 }
 
-fn query_witness(
-    challenge: u64,
-) -> (u64, Assembly) {
+fn query_witness(challenge: u64) -> (u64, Assembly) {
     let geometry = CSGeometry {
         num_columns_under_copy_permutation: 136,
         num_witness_columns: 5,
         num_constant_columns: 4,
         max_allowed_constraint_degree: 8,
     };
-    let builder = new_builder::<_, F>(CsReferenceImplementationBuilder::<
-        F,
-        F,
-        DevCSConfig,
-    >::new(geometry, 1024));
+    let builder = new_builder::<_, F>(CsReferenceImplementationBuilder::<F, F, DevCSConfig>::new(
+        geometry, 1024,
+    ));
     let builder = ConstantsAllocatorGate::configure_builder(
         builder,
         GatePlacementStrategy::UseGeneralPurposeColumns,
