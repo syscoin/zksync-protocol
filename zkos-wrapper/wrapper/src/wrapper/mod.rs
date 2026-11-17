@@ -150,7 +150,9 @@ impl SnarkWrapper {
 
 /// Version stamp of the on-disk setup-snapshot format; bump on layout changes so old
 /// snapshots are skipped instead of misread.
-const SETUP_CACHE_FORMAT_VERSION: u32 = 3;
+// Syscoin's recursive verifier constraints change each downstream VK independently of the
+// package version, domain size and application commitment.
+const SETUP_CACHE_FORMAT_VERSION: u32 = 4;
 const SETUP_CACHE_MANIFEST_FILE: &str = "manifest.json";
 
 /// Compatibility fingerprint stored next to a setup snapshot. Loading validates every
