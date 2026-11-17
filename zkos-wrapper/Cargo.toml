@@ -45,7 +45,6 @@ bellman = { package = "zksync_bellman", path = "../crypto/crates/bellman" }
 rescue_poseidon = { path = "../crypto/crates/rescue-poseidon" }
 snark_wrapper = { path = "../crypto/crates/snark-wrapper" }
 
-# Airbender is pinned to `0decdcdb`.
 # The ref spec (not just the commit it resolves to) must match what every other
 # consumer of these crates in one dependency graph uses -- `airbender-platform`,
 # `../eravm-airbender-verifier/` and zksync-airbender-prover -- or cargo builds two

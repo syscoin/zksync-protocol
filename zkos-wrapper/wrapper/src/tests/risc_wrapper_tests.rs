@@ -175,6 +175,23 @@ fn from_base_binary_aux_params_fold_depth() {
 
     let commitment = BinaryCommitment::from_base_binary(&binary, &text);
 
+    use execution_utils::{
+        RecursionArtifact, RecursionLayer, verifier_binaries::recursion_artifact,
+    };
+    let artifact = |layer, kind| {
+        recursion_artifact(crate::active_security::ACTIVE_SECURITY_MODEL, layer, kind)
+    };
+    let independent = BinaryCommitment::from_binaries(
+        &binary,
+        &text,
+        artifact(RecursionLayer::Unrolled, RecursionArtifact::Bin),
+        artifact(RecursionLayer::Unrolled, RecursionArtifact::Txt),
+        artifact(RecursionLayer::Unified, RecursionArtifact::Bin),
+        artifact(RecursionLayer::Unified, RecursionArtifact::Txt),
+    );
+    assert_eq!(commitment.end_params, independent.end_params);
+    assert_eq!(commitment.aux_params, independent.aux_params);
+
     assert_eq!(
         commitment.aux_params, EXPECTED_BASE_UNROLLED_UNIFIED_AUX_PARAMS,
         "from_base_binary aux_params must be the base -> unrolled -> unified fold; \
