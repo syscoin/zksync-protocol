@@ -47,7 +47,7 @@ These public inputs propagate through compression and the SNARK all the way to L
 
 ## Why do we need `wrapper_generator`?
 
-Usually, a verification function takes a VK (verification key) as an argument to specify what exact circuit to verify. However, in our case we hardcode all the inner airbender circuit parameters into the wrapper itself for optimization. The `wrapper_generator` generates four files — two per inner verifier:
+Usually, a verification function takes a VK (verification key) as an argument to specify what exact circuit to verify. However, in our case we hardcode all the inner airbender circuit parameters into the wrapper itself for optimization. The `wrapper_generator` emits the Rust constants, quotient constraints and serialized layout for each inner verifier.
 
 - [unified_reduced/imports/](../wrapper/src/inner_verifiers/unified_reduced/imports/):
     - `circuit_layout.rs` — constants specifying the geometry of the unified reduced machine circuit
@@ -56,7 +56,7 @@ Usually, a verification function takes a VK (verification key) as an argument to
     - `circuit_layout.rs` — constants specifying the geometry of the Blake2s delegation circuit
     - `circuit_quotient.rs` — the quotient part of verification
 
-Both imports directories also contain a `circuit_layout.json` — the serialized `CompiledCircuitArtifact` loaded at runtime for proof deserialization. These are not produced by the generator and must be updated separately when the airbender circuits change.
+Both imports directories also contain a `circuit_layout.json` — the serialized `CompiledCircuitArtifact` loaded at runtime for proof deserialization. The generator writes the JSON from the same compiled circuit as the Rust files.
 
 We also need to verify that the correct code was executed. This is handled by `BinaryCommitment` (defined in `circuits/risc_wrapper.rs`), which computes a commitment (`end_params`) from the RISC-V binary — identifying which program was run on the last airbender circuit.
 
