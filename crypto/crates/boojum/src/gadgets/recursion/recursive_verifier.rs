@@ -2450,3 +2450,7 @@ mod test {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "recursive_verifier_tests.rs"]
+mod opening_precompute_tests;
