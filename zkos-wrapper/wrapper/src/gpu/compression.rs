@@ -60,13 +60,15 @@ pub fn get_compression_setup(
 
     let (setup_base, vk_params, vars_hint, witness_hints) =
         cs.get_light_setup(worker, fri_lde_factor, merkle_tree_cap_size);
+    // The returned hints own their maps, so the assembly can release its copies before conversion.
+    drop(cs);
 
     let (gpu_setup, gpu_vk) =
         gpu_setup_and_vk_from_base_setup_vk_params_and_hints::<CompressionTreeHasher, _>(
-            setup_base.clone(),
+            setup_base,
             vk_params,
-            vars_hint.clone(),
-            witness_hints.clone(),
+            vars_hint,
+            witness_hints,
             &worker,
         )
         .unwrap();
@@ -113,6 +115,7 @@ pub fn prove_compression(
 
     let proof_config = CompressionCircuit::get_proof_config();
 
+    let host_preparation = start.elapsed();
     let proof = gpu_prove_from_external_witness_data::<
         CompressionTranscript,
         CompressionTreeHasher,
@@ -130,8 +133,9 @@ pub fn prove_compression(
     .unwrap();
 
     tracing::info!(
-        "compression wrapper proving takes {} ms",
-        start.elapsed().as_millis()
+        "compression wrapper proving takes {} ms (host witness preparation {} ms)",
+        start.elapsed().as_millis(),
+        host_preparation.as_millis()
     );
 
     proof.into()
