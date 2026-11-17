@@ -102,6 +102,7 @@ ark-bls12-381 = { version = "0.5", default-features = false, features = ["scalar
 # Protocol and VM dependencies
 #
 # The root patch below keeps the platform and the wrapper on the same Airbender types.
+airbender = { package = "airbender-sdk", git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
 airbender-codec = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
 # `default-features = false` drops airbender-host's default `gpu-prover` (the
 # CUDA `gpu_prover` crate). Consumers re-enable it through their own `gpu_fri`
