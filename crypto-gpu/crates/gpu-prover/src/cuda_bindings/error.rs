@@ -28,6 +28,7 @@ pub enum GpuError {
     FFAssignErr(u32),
     PermutationPolysErr(u32),
     MSMErr(u32),
+    MsmAlreadyInitialized,
     EvaluationErr(u32),
     NTTErr(u32),
     MultiGpuNTTErr(u32),

@@ -14,6 +14,7 @@ pub mod cuda_allocator;
 pub use cuda_allocator::*;
 pub mod async_vec;
 mod context;
+mod msm;
 mod device_arithmetic;
 mod device_buf;
 mod device_heavy_ops;

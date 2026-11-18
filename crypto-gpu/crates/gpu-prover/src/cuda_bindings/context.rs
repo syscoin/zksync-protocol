@@ -1,14 +1,17 @@
+use super::msm::{CudaMsmApi, MsmBases};
 use super::*;
 use crate::{Crs, CrsForMonomialForm};
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 
 static DEVICES_IN_USE: Mutex<Vec<Option<()>>> = Mutex::new(vec![]);
 
 pub struct GpuContext {
     device_id: usize,
     pub(crate) mem_pool: Option<bc_mem_pool>,
-    pub(crate) bases: Option<*const c_void>, // addr of bases on gpu device
-    pub(crate) bases_len: usize,
+    // SYSCOIN: Never auto-free device data if stream synchronization fails while
+    // unwinding. Successful Drop explicitly retires this owner after synchronization.
+    pub(crate) bases: ManuallyDrop<Option<MsmBases>>,
 
     pub(crate) ff: bool,
     pub(crate) ntt: bool,
@@ -68,8 +71,7 @@ impl GpuContext {
         Ok(Self {
             device_id: device_id,
             mem_pool: None,
-            bases: None,
-            bases_len: 0,
+            bases: ManuallyDrop::new(None),
             ff: false,
             ntt: false,
             pn: false,
@@ -110,8 +112,7 @@ impl GpuContext {
         Ok(Self {
             device_id: device_id,
             mem_pool: None,
-            bases: None,
-            bases_len: 0,
+            bases: ManuallyDrop::new(None),
             ff: false,
             ntt: false,
             pn: false,
@@ -126,31 +127,12 @@ impl GpuContext {
         assert!(self.mem_pool.is_none(), "Can't set up msm with mem pool");
         set_device(self.device_id)?;
 
-        self.bases_len = bases.len();
-
-        let bases = transmute_values(bases.as_ref().as_ref());
-
-        let len = bases.len() as u64;
-        let mut d_bases_ptr = std::ptr::null_mut();
-
-        unsafe {
-            let result = unsafe { bc_malloc(std::ptr::addr_of_mut!(d_bases_ptr), len) };
-            if result != 0 {
-                return Err(GpuError::CreateContextErr(result));
-            }
-            let result = bc_memcpy(d_bases_ptr, bases.as_ptr() as *const c_void, len);
-            if result != 0 {
-                return Err(GpuError::CreateContextErr(result));
-            }
-
-            self.bases = Some(d_bases_ptr);
-            let result = msm_set_up();
-            if result != 0 {
-                return Err(GpuError::CreateContextErr(result));
-            }
-        }
-
-        Ok(())
+        MsmBases::initialize(
+            &mut self.bases,
+            CudaMsmApi(self.device_id),
+            transmute_values(bases),
+            bases.len(),
+        )
     }
 
     pub fn set_up_ff(&mut self) -> GpuResult<()> {
@@ -291,14 +273,9 @@ impl Drop for GpuContext {
             }
         }
 
-        if let Some(bases) = self.bases {
-            if unsafe { bc_free(bases as *mut c_void) } != 0 {
-                panic!("couldn't free bases");
-            }
-            if unsafe { msm_tear_down() } != 0 {
-                panic!("couldn't tear down msm");
-            }
-        }
+        // SYSCOIN: The stream synchronization above retires every reader before
+        // the unique MSM allocation owner releases bases and configured state.
+        drop(self.bases.take());
 
         if self.pn {
             if unsafe { pn_tear_down() } != 0 {

@@ -4,8 +4,9 @@ use crate::cuda_bindings::GpuError;
 impl DeviceBuf<Fr> {
     pub fn msm(&mut self, ctx: &mut GpuContext) -> GpuResult<DeviceBuf<G1>> {
         let length = self.len();
+        let bases = ctx.bases.as_ref().expect("MSM must be initialized");
         assert_eq!(
-            length, ctx.bases_len,
+            length, bases.len(),
             "length of polynomial and bases should be equal"
         );
         assert!(
@@ -23,7 +24,7 @@ impl DeviceBuf<Fr> {
         let cfg = msm_configuration {
             mem_pool: ctx.mem_pool.unwrap(),
             stream: ctx.exec_stream.inner,
-            bases: ctx.bases.unwrap() as *mut c_void,
+            bases: ctx.bases.as_ref().expect("MSM must be initialized").ptr(),
             scalars: self.as_mut_ptr(0..length) as *mut c_void,
             results: result.as_mut_ptr(0..254) as *mut c_void,
             log_scalars_count: log_2(length),
