@@ -515,7 +515,14 @@ fn test_proof_comparison_for_sha256() {
         NopGate::configure_builder(builder, GatePlacementStrategy::UseGeneralPurposeColumns);
     let verifier = builder.build(());
     compare_proofs(&expected_proof, &actual_proof);
-    assert!(verifier.verify::<DefaultTreeHasher, DefaultTranscript, NoPow>((), &vk, &actual_proof,));
+    assert!(
+        verifier.verify::<DefaultTreeHasher, DefaultTranscript, NoPow>(
+            (),
+            &vk,
+            &actual_proof,
+            &prover_config
+        )
+    );
 }
 
 fn init_or_synth_cs_for_sha256<CFG: CSConfig, A: GoodAllocator, const DO_SYNTH: bool>(
@@ -1924,6 +1931,7 @@ mod zksync {
                 (),
                 vk,
                 proof,
+                &CF::proof_config_for_compression_step(),
             )
     }
 
@@ -1937,6 +1945,7 @@ mod zksync {
             (),
             vk,
             proof,
+            &CF::proof_config_for_compression_step(),
         )
     }
 

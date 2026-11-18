@@ -56,6 +56,7 @@ where
             (),
             vk,
             proof,
+            &CF::proof_config_for_compression_step(),
         )
     }
 

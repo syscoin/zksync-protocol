@@ -102,8 +102,8 @@ pub type CircuitRiscWrapperTreeHasher = CircuitGoldilocksPoseidon2Sponge;
 pub type RiscWrapperCircuitBuilder = CircuitBuilderProxy<GL, RiscWrapper>;
 
 pub use rescue_poseidon::franklin_crypto::bellman::pairing::bn256::{Bn256, Fr};
-use rescue_poseidon::poseidon2::Poseidon2Sponge;
 use rescue_poseidon::poseidon2::transcript::Poseidon2Transcript;
+use rescue_poseidon::poseidon2::Poseidon2Sponge;
 
 use snark_wrapper::implementations::poseidon2::tree_hasher::AbsorptionModeReplacement;
 
@@ -124,8 +124,8 @@ use bellman::plonk::better_better_cs::cs::{ProvingAssembly, SetupAssembly};
 use bellman::plonk::better_better_cs::gates::selector_optimized_with_d_next::SelectorOptimizedWidth4MainGateWithDNext;
 use bellman::plonk::better_better_cs::verifier::verify as verify_snark;
 use boojum::ethereum_types::H256;
-use snark_wrapper::implementations::poseidon2::CircuitPoseidon2Sponge;
 use snark_wrapper::implementations::poseidon2::transcript::CircuitPoseidon2Transcript;
+use snark_wrapper::implementations::poseidon2::CircuitPoseidon2Sponge;
 
 use bellman::worker::Worker as BellmanWorker;
 
@@ -262,7 +262,12 @@ pub fn verify_risc_wrapper_proof(proof: &RiscWrapperProof, vk: &RiscWrapperVK) -
     }
     let verifier_builder = RiscWrapperCircuitBuilder::dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<RiscWrapperTreeHasher, RiscWrapperTranscript, NoPow>((), vk, proof)
+    verifier.verify::<RiscWrapperTreeHasher, RiscWrapperTranscript, NoPow>(
+        (),
+        vk,
+        proof,
+        &RiscWrapper::get_proof_config(),
+    )
 }
 
 // Stark -> Stark Compression
@@ -367,7 +372,12 @@ pub fn verify_compression_proof(proof: &CompressionProof, vk: &CompressionVK) ->
     }
     let verifier_builder = CompressionCircuitBuilder::dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<CompressionTreeHasher, CompressionTranscript, NoPow>((), vk, proof)
+    verifier.verify::<CompressionTreeHasher, CompressionTranscript, NoPow>(
+        (),
+        vk,
+        proof,
+        &CompressionCircuit::get_proof_config(),
+    )
 }
 
 // Stark -> Snark Wrapper
@@ -457,7 +467,7 @@ pub fn prove_snark_wrapper(
     if use_zk {
         tracing::info!("using zk (padding) proving");
         const NUM_PADDING_TERMS: usize = 2 + 2 + 2; // worst case witness polys are opened at 2 points, plus there are
-        // indirect openings of grand product for permutation and for lookup
+                                                    // indirect openings of grand product for permutation and for lookup
         let mut rng = crate::buffered_os_rng::BufferedOsRng::new();
         assembly.finalize_to_size_log_2_with_randomization(
             L1_VERIFIER_DOMAIN_SIZE_LOG,

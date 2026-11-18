@@ -1,4 +1,5 @@
 use super::proof::Proof;
+use super::prover::ProofConfig;
 use super::transcript::Transcript;
 use super::*;
 
@@ -885,6 +886,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
         )
     }
 
+    /// Verifies under caller-trusted policy, which must not be taken from the proof.
     pub fn verify<
         H: TreeHasher<F>,
         TR: Transcript<F, CompatibleCap = H::Output>,
@@ -894,7 +896,14 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
         transcript_params: TR::TransciptParameters,
         vk: &VerificationKey<F, H>,
         proof: &Proof<F, H, EXT>,
+        expected_proof_config: &ProofConfig,
     ) -> bool {
+        // SYSCOIN: a proof cannot choose its own security level, PoW, or FRI query policy.
+        if &proof.proof_config != expected_proof_config {
+            log!("Proof configuration differs from trusted verifier policy");
+            return false;
+        }
+
         let mut transcript = TR::new(transcript_params);
 
         if self.parameters != vk.fixed_parameters.parameters {
@@ -907,12 +916,12 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
             return false;
         }
 
-        if vk.fixed_parameters.cap_size != proof.proof_config.merkle_tree_cap_size {
+        if vk.fixed_parameters.cap_size != expected_proof_config.merkle_tree_cap_size {
             log!("Different cap sized in proof as VK");
             return false;
         }
 
-        if vk.fixed_parameters.fri_lde_factor != proof.proof_config.fri_lde_factor {
+        if vk.fixed_parameters.fri_lde_factor != expected_proof_config.fri_lde_factor {
             log!("Different FRI LDE factor in proof as VK");
             return false;
         }
@@ -1845,17 +1854,17 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
             interpolation_log2s_schedule, // folding schedule
             final_expected_degree,
         ) = crate::cs::implementations::prover::compute_fri_schedule(
-            proof.proof_config.security_level as u32,
-            proof.proof_config.merkle_tree_cap_size,
-            proof.proof_config.pow_bits,
-            proof.proof_config.fri_lde_factor.trailing_zeros(),
+            expected_proof_config.security_level as u32,
+            expected_proof_config.merkle_tree_cap_size,
+            expected_proof_config.pow_bits,
+            expected_proof_config.fri_lde_factor.trailing_zeros(),
             vk.fixed_parameters.domain_size.trailing_zeros(),
-            proof.proof_config.extra_fri_queries,
+            expected_proof_config.extra_fri_queries,
         );
 
         let mut expected_degree = vk.fixed_parameters.domain_size;
 
-        if new_pow_bits != proof.proof_config.pow_bits {
+        if new_pow_bits != expected_proof_config.pow_bits {
             log!("PoW bits computation diverged");
             return false;
         }
@@ -1973,7 +1982,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
 
             let pow_is_valid = POW::verify_from_field_elements(
                 challenges,
-                proof.proof_config.pow_bits,
+                expected_proof_config.pow_bits,
                 pow_challenge,
             );
             if pow_is_valid == false {
@@ -1991,7 +2000,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
         use crate::cs::implementations::transcript::BoolsBuffer;
 
         let lde_domain_size: u64 =
-            vk.fixed_parameters.domain_size * proof.proof_config.fri_lde_factor as u64;
+            vk.fixed_parameters.domain_size * expected_proof_config.fri_lde_factor as u64;
 
         let max_needed_bits = lde_domain_size.trailing_zeros() as usize;
         let mut bools_buffer = BoolsBuffer {
@@ -2000,7 +2009,7 @@ impl<F: SmallField, EXT: FieldExtension<2, BaseField = F>> Verifier<F, EXT> {
         };
 
         let num_bits_for_in_coset_index =
-            max_needed_bits - proof.proof_config.fri_lde_factor.trailing_zeros() as usize;
+            max_needed_bits - expected_proof_config.fri_lde_factor.trailing_zeros() as usize;
         let base_tree_index_shift = vk.fixed_parameters.domain_size.trailing_zeros();
         assert_eq!(num_bits_for_in_coset_index, base_tree_index_shift as usize);
 

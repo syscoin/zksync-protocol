@@ -158,6 +158,7 @@ mod test {
             (),
             &vk.clone().into_inner(),
             &proof.clone().into_inner(),
+            &recursion_layer_proof_config(),
         );
         assert!(is_valid);
 
@@ -210,7 +211,7 @@ mod test {
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerHasher,
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerTranscript,
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerPoW,
-        >((), &vk, &proof.clone());
+        >((), &vk, &proof.clone(), &CompressionMode1::proof_config_for_compression_step());
         assert!(is_valid);
 
         // make a compression circuit
@@ -262,7 +263,7 @@ mod test {
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerHasher,
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerTranscript,
             <CompressionMode1 as ProofCompressionFunction>::ThisLayerPoW,
-        >((), &vk, &proof.clone());
+        >((), &vk, &proof.clone(), &CompressionMode1::proof_config_for_compression_step());
         assert!(is_valid);
 
         // make a compression circuit
@@ -313,7 +314,7 @@ mod test {
             <CompressionMode2 as ProofCompressionFunction>::ThisLayerHasher,
             <CompressionMode2 as ProofCompressionFunction>::ThisLayerTranscript,
             <CompressionMode2 as ProofCompressionFunction>::ThisLayerPoW,
-        >((), &vk, &proof.clone());
+        >((), &vk, &proof.clone(), &CompressionMode2::proof_config_for_compression_step());
         assert!(is_valid);
 
         // make a compression circuit
@@ -367,7 +368,7 @@ mod test {
             <CompressionMode3 as ProofCompressionFunction>::ThisLayerHasher,
             <CompressionMode3 as ProofCompressionFunction>::ThisLayerTranscript,
             <CompressionMode3 as ProofCompressionFunction>::ThisLayerPoW,
-        >((), &vk, &proof.clone());
+        >((), &vk, &proof.clone(), &CompressionMode3::proof_config_for_compression_step());
         assert!(is_valid);
 
         // make a compression circuit

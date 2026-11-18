@@ -149,7 +149,7 @@ impl CircuitWrapper {
         proof: &ZksyncProof<H>,
     ) -> bool {
         let verifier = self.get_verifier();
-        verifier.verify::<H, T, NoPow>(transcript_params, vk, proof)
+        verifier.verify::<H, T, NoPow>(transcript_params, vk, proof, &self.proof_config())
     }
 
     pub(crate) fn get_verifier(&self) -> Verifier<F, EXT> {
