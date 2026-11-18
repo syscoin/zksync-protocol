@@ -3,7 +3,6 @@ use std::collections::VecDeque;
 use std::sync::{Arc, RwLock};
 
 use boojum::algebraic_props::round_function::AlgebraicRoundFunction;
-use boojum::crypto_bigint::Zero;
 use boojum::cs::traits::cs::ConstraintSystem;
 use boojum::field::SmallField;
 use boojum::gadgets::boolean::Boolean;

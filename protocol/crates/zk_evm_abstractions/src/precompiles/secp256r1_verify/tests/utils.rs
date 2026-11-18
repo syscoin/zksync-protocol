@@ -192,7 +192,7 @@ fn signed_case(
     let signing_key =
         SigningKey::from_bytes((&private_key).into()).expect("private key vector must be valid");
     let verifying_key = signing_key.verifying_key();
-    let encoded = verifying_key.to_encoded_point(false);
+    let encoded = verifying_key.to_sec1_point(false);
     let (x, y) = match encoded.coordinates() {
         p256::elliptic_curve::sec1::Coordinates::Uncompressed { x, y } => (*x, *y),
         _ => panic!("signing key must produce uncompressed coordinates"),
@@ -204,11 +204,12 @@ fn signed_case(
         .sign_prehash(&digest)
         .expect("prehash signing must succeed");
 
+    let (r, s) = signature.split_bytes();
     DeterministicSecp256r1Case {
         name,
         digest,
-        r: signature.r().to_bytes().into(),
-        s: signature.s().to_bytes().into(),
+        r: r.into(),
+        s: s.into(),
         x,
         y,
         expected: Ok(true),

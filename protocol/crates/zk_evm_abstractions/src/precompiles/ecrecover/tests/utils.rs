@@ -209,9 +209,7 @@ fn signed_case(
     let mut digest_bytes = [0u8; 32];
     digest_bytes.copy_from_slice(digest.as_slice());
 
-    let (signature, recovery_id) = signing_key
-        .sign_prehash_recoverable(&digest_bytes)
-        .expect("prehash signing must succeed");
+    let (signature, recovery_id) = signing_key.sign_prehash_recoverable(&digest_bytes);
 
     let signature_bytes = signature.to_bytes();
     let mut r = [0u8; 32];
@@ -243,9 +241,7 @@ fn high_s_signed_case(
     let mut digest_bytes = [0u8; 32];
     digest_bytes.copy_from_slice(digest.as_slice());
 
-    let (signature, recovery_id) = signing_key
-        .sign_prehash_recoverable(&digest_bytes)
-        .expect("prehash signing must succeed");
+    let (signature, recovery_id) = signing_key.sign_prehash_recoverable(&digest_bytes);
 
     let (r_bytes, s_bytes) = signature.split_bytes();
     let r: [u8; 32] = r_bytes.into();
@@ -254,9 +250,7 @@ fn high_s_signed_case(
 
     let high_s_signature =
         Signature::from_scalars(r, high_s).expect("constructed high-s signature must be valid");
-    let normalized_signature = high_s_signature
-        .normalize_s()
-        .expect("constructed signature must normalize back to low-s form");
+    let normalized_signature = high_s_signature.normalize_s();
     assert_eq!(
         normalized_signature.to_bytes().as_slice(),
         signature.to_bytes().as_slice(),
@@ -290,7 +284,7 @@ fn to_high_s_bytes(low_s: [u8; 32]) -> [u8; 32] {
 }
 
 fn verifying_key_bytes(verifying_key: &VerifyingKey) -> [u8; 65] {
-    let encoded = verifying_key.to_encoded_point(false);
+    let encoded = verifying_key.to_sec1_point(false);
     let mut bytes = [0u8; 65];
     bytes.copy_from_slice(encoded.as_bytes());
     bytes

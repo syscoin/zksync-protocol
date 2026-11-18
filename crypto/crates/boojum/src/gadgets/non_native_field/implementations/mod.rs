@@ -9,13 +9,13 @@ use crate::cs::traits::cs::ConstraintSystem;
 use crate::gadgets::traits::allocatable::CSPlaceholder;
 use crate::gadgets::u16::UInt16;
 use crate::{cs::Variable, gadgets::u8::get_8_by_8_range_check_table};
-use crypto_bigint::{nlimbs, CheckedMul, NonZero, Uint, Zero};
+use crypto_bigint::NonZero;
 
 pub mod impl_traits;
 pub mod implementation_u16;
 pub mod utils;
 
-pub type U1024 = Uint<{ nlimbs!(1024) }>;
+pub use crypto_bigint::U1024;
 
 // Small note on the strategy - because we are quite flexible in what range check tables we use we have a few options:
 // - if we only need field ops we can create many lookup arguments that are basically 16 bit range checks
@@ -42,7 +42,7 @@ impl OverflowTracker {
 
     pub fn overflow_over_representation(&self, modulus: &U1024, repr_bits: u32) -> u32 {
         let total = modulus.saturating_mul(&U1024::from_word(self.max_moduluses as u64));
-        let total_bits = total.bits() as u32;
+        let total_bits = total.bit_width();
         if total_bits <= repr_bits {
             0
         } else {
@@ -52,22 +52,17 @@ impl OverflowTracker {
 
     pub fn into_max_value(&self, modulus: &U1024) -> U1024 {
         let mut other = U1024::ZERO;
-        other.as_words_mut()[0] = self.max_moduluses as u64;
+        other.as_mut_words()[0] = self.max_moduluses as u64;
 
         other.wrapping_mul(modulus)
     }
 
     pub fn used_words_if_normalized(&self, modulus: &U1024) -> usize {
         let mut other = U1024::ZERO;
-        other.as_words_mut()[0] = self.max_moduluses as u64;
+        other.as_mut_words()[0] = self.max_moduluses as u64;
         let upper_bound = other.wrapping_mul(modulus);
 
-        let mut words = upper_bound.bits() / 16;
-        if upper_bound.bits() % 16 != 0 {
-            words += 1;
-        }
-
-        words
+        upper_bound.bit_width().div_ceil(16) as usize
     }
 }
 
@@ -106,7 +101,7 @@ impl<T: pairing::ff::PrimeField, const N: usize> NonNativeFieldOverU16Params<T, 
 
         let mut modulus_u1024 = U1024::ZERO;
         for (dst, src) in modulus_u1024
-            .as_words_mut()
+            .as_mut_words()
             .iter_mut()
             .zip(T::char().as_ref())
         {
@@ -123,7 +118,7 @@ impl<T: pairing::ff::PrimeField, const N: usize> NonNativeFieldOverU16Params<T, 
         }
         let mut max_mods_in_allocation = q.as_words()[0];
         assert!(max_mods_in_allocation <= u32::MAX as u64);
-        if r.is_zero().unwrap_u8() == 0 {
+        if !r.is_zero().to_bool() {
             max_mods_in_allocation += 1;
         }
         assert!(max_mods_in_allocation <= u32::MAX as u64);
@@ -148,7 +143,7 @@ impl<T: pairing::ff::PrimeField, const N: usize> NonNativeFieldOverU16Params<T, 
 
             tmp = tmp.shr_vartime(16);
         }
-        assert!(tmp.is_zero().unwrap_u8() == 1);
+        assert!(tmp.is_zero().to_bool());
 
         let max_q = u16_words_to_u1024(&[u16::MAX; N + 1]);
         let max_input = max_q.checked_mul(&modulus_u1024).unwrap(); // actually + P - 1, but we take lower

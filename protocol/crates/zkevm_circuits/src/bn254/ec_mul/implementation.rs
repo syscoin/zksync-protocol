@@ -94,7 +94,7 @@ where
 
     let (overflows, rem) = max_value.div_rem(&params.modulus_u1024);
     let mut max_moduluses = overflows.as_words()[0] as u32;
-    if rem.is_zero().unwrap_u8() != 1 {
+    if !rem.is_zero().to_bool() {
         max_moduluses += 1;
     }
 

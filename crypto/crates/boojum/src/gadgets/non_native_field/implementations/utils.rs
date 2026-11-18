@@ -55,7 +55,7 @@ pub fn u16_words_to_u1024(words: &[u16]) -> U1024 {
         tmp <<= 16;
         tmp |= chunk[0] as u64;
 
-        result.as_words_mut()[i] = tmp;
+        result.as_mut_words()[i] = tmp;
         i += 1;
     }
 
@@ -66,7 +66,7 @@ pub fn u16_words_to_u1024(words: &[u16]) -> U1024 {
             tmp |= (*el as u64) << shift;
             shift += 16;
         }
-        result.as_words_mut()[i] = tmp;
+        result.as_mut_words()[i] = tmp;
     }
 
     result
@@ -75,7 +75,9 @@ pub fn u16_words_to_u1024(words: &[u16]) -> U1024 {
 pub fn unnormalized_u16_field_words_to_u1024<F: SmallField>(words: &[F]) -> U1024 {
     let mut result = U1024::ZERO;
     let mut shift = 0;
-    for el in words.iter() {
+    // Limbs above the fixed-width value used to shift to zero. A shift by
+    // the full bit width now panics, so stop at the last representable limb.
+    for el in words.iter().take((U1024::BITS / 16) as usize) {
         let as_u1024 = U1024::from_word(el.as_u64_reduced());
         let as_u1024 = as_u1024.shl_vartime(shift);
         result = result.saturating_add(&as_u1024);
@@ -98,7 +100,7 @@ pub fn u16_field_words_to_u1024<F: SmallField>(words: &[F]) -> U1024 {
         tmp <<= 16;
         tmp |= chunk[0].as_u64_reduced();
 
-        result.as_words_mut()[i] = tmp;
+        result.as_mut_words()[i] = tmp;
         i += 1;
     }
 
@@ -109,7 +111,7 @@ pub fn u16_field_words_to_u1024<F: SmallField>(words: &[F]) -> U1024 {
             tmp |= el.as_u64_reduced() << shift;
             shift += 16;
         }
-        result.as_words_mut()[i] = tmp;
+        result.as_mut_words()[i] = tmp;
     }
 
     result
@@ -334,7 +336,7 @@ pub fn split_out_u32_carry_from_zero_low<F: SmallField, CS: ConstraintSystem<F>>
 pub fn u1024_to_fe<T: pairing::ff::PrimeField>(input: &U1024) -> T {
     let mut modulus_u1024 = U1024::ZERO;
     for (dst, src) in modulus_u1024
-        .as_words_mut()
+        .as_mut_words()
         .iter_mut()
         .zip(T::char().as_ref())
     {
@@ -362,7 +364,7 @@ pub fn u1024_to_u16_words<const N: usize>(input: &U1024) -> [u16; N] {
         tmp = tmp.shr_vartime(16);
     }
 
-    assert!(tmp.is_zero().unwrap_u8() == 1);
+    assert!(tmp.is_zero().to_bool());
 
     result
 }

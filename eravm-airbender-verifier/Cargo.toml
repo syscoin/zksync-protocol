@@ -102,14 +102,14 @@ ark-bls12-381 = { version = "0.5", default-features = false, features = ["scalar
 # Protocol and VM dependencies
 #
 # The root patch below keeps the platform and the wrapper on the same Airbender types.
-airbender = { package = "airbender-sdk", git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
-airbender-codec = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
+airbender = { package = "airbender-sdk", git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
+airbender-codec = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
 # `default-features = false` drops airbender-host's default `gpu-prover` (the
 # CUDA `gpu_prover` crate). Consumers re-enable it through their own `gpu_fri`
 # feature; a `--no-default-features` build stays CUDA-free. Must live on the
 # workspace dep — a member's `default-features = false` is otherwise ignored.
-airbender-host = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc", default-features = false }
-airbender-crypto = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
+airbender-host = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79", default-features = false }
+airbender-crypto = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
 # zksync-airbender's CLI crate, for `CarriedChainCombiner::advance_carried_chain`
 # only. Same git source and rev as the airbender crates `airbender-platform` above
 # and `../zkos-wrapper/` pull, so there is one `execution_utils` in this

@@ -16,29 +16,10 @@ impl Secp256r1Backend for LegacySecp256r1Backend {
         y: &[u8; 32],
     ) -> Result<bool, ()> {
         use p256::ecdsa::signature::hazmat::PrehashVerifier;
-        use p256::ecdsa::{Signature, VerifyingKey};
-        use p256::elliptic_curve::generic_array::GenericArray;
-        use p256::elliptic_curve::sec1::FromEncodedPoint;
-        use p256::{AffinePoint, EncodedPoint};
+        use p256::ecdsa::Signature;
 
-        let signature = Signature::from_scalars(
-            GenericArray::clone_from_slice(r),
-            GenericArray::clone_from_slice(s),
-        )
-        .map_err(|_| ())?;
-
-        let encoded_key = EncodedPoint::from_affine_coordinates(
-            &GenericArray::clone_from_slice(x),
-            &GenericArray::clone_from_slice(y),
-            false,
-        );
-
-        let public_key_point = AffinePoint::from_encoded_point(&encoded_key);
-        if bool::from(public_key_point.is_none()) {
-            return Err(());
-        }
-
-        let verifying_key = VerifyingKey::from_affine(public_key_point.unwrap()).map_err(|_| ())?;
+        let signature = Signature::from_scalars(*r, *s).map_err(|_| ())?;
+        let verifying_key = super::parse_public_key(x, y)?;
         Ok(verifying_key.verify_prehash(digest, &signature).is_ok())
     }
 }
