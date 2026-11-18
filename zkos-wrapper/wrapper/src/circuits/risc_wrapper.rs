@@ -25,7 +25,6 @@ use boojum::{
 use circuit_mersenne_field::{
     MersenneField, MersenneQuartic, extension_trait::CircuitFieldExpression,
 };
-use std::mem::MaybeUninit;
 use std::sync::OnceLock;
 
 use crate::inner_verifiers::unified_reduced::skeleton::{
@@ -622,10 +621,6 @@ pub(crate) fn prepare_proof_for_wrapper<
     (skeleton, queries)
 }
 
-#[allow(invalid_value)]
-// Kept for ad-hoc debugging of the inner verifier outside the main proving
-// pipeline, which now relies on explicit top-level verification methods.
-#[allow(dead_code)]
 pub(crate) fn verify_risc_proof<V: LeafInclusionVerifier>(
     proof: &RiscUnrolledProof,
 ) -> (
@@ -640,20 +635,10 @@ pub(crate) fn verify_risc_proof<V: LeafInclusionVerifier>(
 ) {
     set_iterator_from_unrolled_proof(proof, unified_reduced_compiled_circuit());
 
-    let mut proof_state_dst = unsafe {
-        MaybeUninit::<
-            ProofOutput<
-                TREE_CAP_SIZE,
-                NUM_COSETS,
-                NUM_DELEGATION_CHALLENGES,
-                NUM_AUX_BOUNDARY_VALUES,
-                NUM_MACHINE_STATE_PERMUTATION_CHALLENGES,
-            >,
-        >::uninit()
-        .assume_init()
-    };
-    let mut proof_input_dst =
-        unsafe { MaybeUninit::<ProofPublicInputs<NUM_STATE_ELEMENTS>>::uninit().assume_init() };
+    // SYSCOIN: Verification receives typed references, so even output storage must
+    // contain valid values before the verifier writes its results.
+    let mut proof_state_dst = ProofOutput::empty();
+    let mut proof_input_dst = ProofPublicInputs::uninit();
 
     unsafe {
         risc_verifier::verify_with_configuration::<
@@ -677,7 +662,7 @@ pub(crate) fn set_iterator_from_unrolled_proof(
 
     let it = oracle_data.into_iter();
 
-    risc_verifier::prover::nd_source_std::set_iterator(it.clone());
+    risc_verifier::prover::nd_source_std::set_iterator(it);
 }
 
 // The compiled layout is immutable generated data, so parsing it once per
@@ -711,7 +696,7 @@ pub(crate) fn set_iterator_from_proof(
 
     let it = oracle_data.into_iter();
 
-    risc_verifier::prover::nd_source_std::set_iterator(it.clone());
+    risc_verifier::prover::nd_source_std::set_iterator(it);
 }
 
 use crate::inner_verifiers::blake_delegation::WrappedBlakeProofOutput;
