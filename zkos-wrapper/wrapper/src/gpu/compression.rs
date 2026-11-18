@@ -63,15 +63,11 @@ pub fn get_compression_setup(
     // The returned hints own their maps, so the assembly can release its copies before conversion.
     drop(cs);
 
-    let (gpu_setup, gpu_vk) =
-        gpu_setup_and_vk_from_base_setup_vk_params_and_hints::<CompressionTreeHasher, _>(
-            setup_base,
-            vk_params,
-            vars_hint,
-            witness_hints,
-            &worker,
-        )
-        .unwrap();
+    let (gpu_setup, gpu_vk) = gpu_setup_and_vk_from_base_setup_vk_params_and_hints::<
+        CompressionTreeHasher,
+        _,
+    >(setup_base, vk_params, vars_hint, witness_hints, &worker)
+    .unwrap();
 
     tracing::info!(
         "compression circuit setup takes {} ms",

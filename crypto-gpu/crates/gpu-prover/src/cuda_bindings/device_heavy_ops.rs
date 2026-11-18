@@ -6,7 +6,8 @@ impl DeviceBuf<Fr> {
         let length = self.len();
         let bases = ctx.bases.as_ref().expect("MSM must be initialized");
         assert_eq!(
-            length, bases.len(),
+            length,
+            bases.len(),
             "length of polynomial and bases should be equal"
         );
         assert!(
