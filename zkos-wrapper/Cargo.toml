@@ -45,30 +45,29 @@ bellman = { package = "zksync_bellman", path = "../crypto/crates/bellman" }
 rescue_poseidon = { path = "../crypto/crates/rescue-poseidon" }
 snark_wrapper = { path = "../crypto/crates/snark-wrapper" }
 
-# Airbender is pinned to `0decdcdb`.
 # The ref spec (not just the commit it resolves to) must match what every other
 # consumer of these crates in one dependency graph uses -- `airbender-platform`,
 # `../eravm-airbender-verifier/` and zksync-airbender-prover -- or cargo builds two
 # copies of the airbender crates whose types cross the wrapper's API
 # (`UnrolledProgramProof`). Move them together, and spell the rev the same way.
-unified_reduced_machine_verifier = { git = "https://github.com/matter-labs/zksync-airbender", package = "unified_reduced_machine_verifier", features = [
+unified_reduced_machine_verifier = { git = "https://github.com/syscoin/zksync-airbender", package = "unified_reduced_machine_verifier", features = [
   "proof_utils",
   "blake2_with_compression",
-], default-features = false, rev = "0decdcdb" }
-blake_verifier = { git = "https://github.com/matter-labs/zksync-airbender", package = "blake2_with_compression_verifier", features = [
+], default-features = false, rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+blake_verifier = { git = "https://github.com/syscoin/zksync-airbender", package = "blake2_with_compression_verifier", features = [
   "proof_utils",
   "blake2_with_compression",
-], default-features = false, rev = "0decdcdb" }
-execution_utils = { git = "https://github.com/matter-labs/zksync-airbender", package = "execution_utils", features = [
+], default-features = false, rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+execution_utils = { git = "https://github.com/syscoin/zksync-airbender", package = "execution_utils", features = [
   "prover",
   "verifier_binaries",
-], default-features = false, rev = "0decdcdb" }
-setups = { git = "https://github.com/matter-labs/zksync-airbender", package = "setups", rev = "0decdcdb" }
-mersenne_field = { git = "https://github.com/matter-labs/zksync-airbender", package = "field", rev = "0decdcdb", features = [
+], default-features = false, rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+setups = { git = "https://github.com/syscoin/zksync-airbender", package = "setups", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+mersenne_field = { git = "https://github.com/syscoin/zksync-airbender", package = "field", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870", features = [
   "no_inline",
 ] }
-zkos_verifier_generator = { git = "https://github.com/matter-labs/zksync-airbender", package = "verifier_generator", rev = "0decdcdb" }
-prover = { git = "https://github.com/matter-labs/zksync-airbender", package = "prover", rev = "0decdcdb" }
+zkos_verifier_generator = { git = "https://github.com/syscoin/zksync-airbender", package = "verifier_generator", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+prover = { git = "https://github.com/syscoin/zksync-airbender", package = "prover", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
 
 # unified_reduced_machine_verifier = { path = "../zksync-airbender/circuit_defs/unrolled_circuits/unified_reduced_machine/verifier", features = [
 #     "proof_utils", "blake2_with_compression"

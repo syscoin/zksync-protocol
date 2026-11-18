@@ -1182,7 +1182,7 @@ mod test {
             GoldilocksPoisedonTranscript,
             GoldilocksPoseidonSponge<AbsorptionModeOverwrite>,
             NoPow,
-        >(&worker, proof_config, ());
+        >(&worker, proof_config.clone(), ());
 
         let builder_impl = CsVerifierBuilder::<F, GoldilocksExt2>::new_from_parameters(geometry);
         let builder = new_builder::<_, F>(builder_impl);
@@ -1198,9 +1198,46 @@ mod test {
             (),
             &vk,
             &proof,
+            &proof_config,
         );
 
         assert!(is_valid);
+
+        // SYSCOIN: the same honest proof must fail under every mismatched trusted policy.
+        // This tests policy binding without constructing a forged or truncated proof.
+        let mismatched_policies = [
+            ProofConfig {
+                security_level: proof_config.security_level + 1,
+                ..proof_config.clone()
+            },
+            ProofConfig {
+                pow_bits: proof_config.pow_bits + 1,
+                ..proof_config.clone()
+            },
+            ProofConfig {
+                extra_fri_queries: !proof_config.extra_fri_queries,
+                ..proof_config.clone()
+            },
+            ProofConfig {
+                fri_folding_schedule: Some(vec![1]),
+                ..proof_config.clone()
+            },
+            ProofConfig {
+                fri_lde_factor: proof_config.fri_lde_factor * 2,
+                ..proof_config.clone()
+            },
+            ProofConfig {
+                merkle_tree_cap_size: proof_config.merkle_tree_cap_size * 2,
+                ..proof_config.clone()
+            },
+        ];
+        for policy in mismatched_policies {
+            assert!(!verifier.verify::<
+                GoldilocksPoseidonSponge<AbsorptionModeOverwrite>,
+                GoldilocksPoisedonTranscript,
+                NoPow,
+            >((), &vk, &proof, &policy));
+        }
     }
 
     #[test]
@@ -1342,7 +1379,7 @@ mod test {
             GoldilocksPoisedonTranscript,
             GoldilocksPoseidonSponge<AbsorptionModeOverwrite>,
             NoPow,
-        >(&worker, proof_config, ());
+        >(&worker, proof_config.clone(), ());
 
         let builder_impl = CsVerifierBuilder::<F, GoldilocksExt2>::new_from_parameters(geometry);
         let builder = new_builder::<_, F>(builder_impl);
@@ -1358,6 +1395,7 @@ mod test {
             (),
             &vk,
             &proof,
+            &proof_config,
         );
 
         assert!(is_valid);
@@ -1443,7 +1481,7 @@ mod test {
             GoldilocksPoisedonTranscript,
             GoldilocksPoseidonSponge<AbsorptionModeOverwrite>,
             NoPow,
-        >(&worker, proof_config, ());
+        >(&worker, proof_config.clone(), ());
 
         let builder_impl = CsVerifierBuilder::<F, GoldilocksExt2>::new_from_parameters(geometry);
         let builder = new_builder::<_, F>(builder_impl);
@@ -1459,6 +1497,7 @@ mod test {
             (),
             &vk,
             &proof,
+            &proof_config,
         );
 
         assert!(is_valid);
@@ -1673,7 +1712,7 @@ mod test {
             GoldilocksPoisedonTranscript,
             GoldilocksPoseidonSponge<AbsorptionModeOverwrite>,
             NoPow,
-        >(&worker, proof_config, ());
+        >(&worker, proof_config.clone(), ());
 
         let builder_impl = CsVerifierBuilder::<F, GoldilocksExt2>::new_from_parameters(geometry);
         let builder = new_builder::<_, F>(builder_impl);
@@ -1688,6 +1727,7 @@ mod test {
             (),
             &vk,
             &proof,
+            &proof_config,
         );
 
         assert!(is_valid);

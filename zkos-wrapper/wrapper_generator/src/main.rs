@@ -73,34 +73,28 @@ struct Cli {
     blake_output_dir: String,
 }
 
-fn main() {
-    let cli = Cli::parse();
-    let output_dir = cli.output_dir;
-    let blake_output_dir = cli.blake_output_dir;
+fn write_verifier_files(
+    directory: &Path,
+    circuit: &CompiledCircuitArtifact<Mersenne31Field>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (layout, quotient) = generate_verifier_files(circuit);
+    std::fs::write(directory.join("circuit_layout.rs"), layout)?;
+    std::fs::write(directory.join("circuit_quotient.rs"), quotient)?;
+    // Proof deserialization and the in-circuit verifier must agree on every column.
+    std::fs::write(
+        directory.join("circuit_layout.json"),
+        serde_json::to_vec_pretty(circuit)?,
+    )?;
+    Ok(())
+}
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
     let dummy_bytecode = vec![0u32; setups::unified_reduced_machine::MAX_ROM_SIZE / 4];
     let compiled_circuit = setups::unified_reduced_machine::get_circuit(&dummy_bytecode);
-
-    let (verifier, inline_verifier) = generate_verifier_files(&compiled_circuit);
-    std::fs::write(Path::new(&output_dir).join("circuit_layout.rs"), verifier)
-        .expect(&format!("Failed to write to {}", output_dir));
-    std::fs::write(
-        Path::new(&output_dir).join("circuit_quotient.rs"),
-        inline_verifier,
-    )
-    .expect(&format!("Failed to write to {}", output_dir));
+    write_verifier_files(Path::new(&cli.output_dir), &compiled_circuit)?;
 
     let blake_compiled_circuit =
         setups::blake2_with_compression::get_delegation_circuit().compiled_circuit;
-    let (verifier, inline_verifier) = generate_verifier_files(&blake_compiled_circuit);
-    std::fs::write(
-        Path::new(&blake_output_dir).join("circuit_layout.rs"),
-        verifier,
-    )
-    .expect(&format!("Failed to write to {}", blake_output_dir));
-    std::fs::write(
-        Path::new(&blake_output_dir).join("circuit_quotient.rs"),
-        inline_verifier,
-    )
-    .expect(&format!("Failed to write to {}", blake_output_dir));
+    write_verifier_files(Path::new(&cli.blake_output_dir), &blake_compiled_circuit)
 }

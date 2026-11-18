@@ -76,7 +76,8 @@ impl<F: SmallField> CSAllocatableExt<F> for UInt160<F> {
     const INTERNAL_STRUCT_LEN: usize = 5;
 
     fn witness_from_set_of_values(values: [F; Self::INTERNAL_STRUCT_LEN]) -> Self::Witness {
-        let mut u32_values: [u32; 5] = unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        // SYSCOIN: Even overwritten integer output storage must start initialized.
+        let mut u32_values = [0u32; 5];
         for (dst, src) in u32_values.iter_mut().zip(values.iter()) {
             *dst = <u32 as WitnessCastable<F, F>>::cast_from_source(*src);
         }
@@ -92,8 +93,8 @@ impl<F: SmallField> CSAllocatableExt<F> for UInt160<F> {
     where
         [(); Self::INTERNAL_STRUCT_LEN]:,
     {
-        let mut result: [Variable; Self::INTERNAL_STRUCT_LEN] =
-            unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        // SYSCOIN: Typed arrays must be valid before field-wise assignment.
+        let mut result = [Variable::placeholder(); Self::INTERNAL_STRUCT_LEN];
         for (dst, src) in result.iter_mut().zip(self.inner.iter()) {
             *dst = src.get_variable();
         }

@@ -47,7 +47,7 @@ zkevm-assembly = { version = "=0.153.17", path = "crates/zkEVM-assembly" }
 # guest links this crate through `zk_evm_abstractions`' precompile delegations
 # and through the verifier's own crates, and two copies would put two blake2s
 # implementations and two sets of delegation CSR call sites in one binary.
-airbender-crypto = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
+airbender-crypto = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
 
 # `zksync-crypto` workspace dependencies
 #

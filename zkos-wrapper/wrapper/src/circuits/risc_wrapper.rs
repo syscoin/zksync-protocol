@@ -25,7 +25,6 @@ use boojum::{
 use circuit_mersenne_field::{
     MersenneField, MersenneQuartic, extension_trait::CircuitFieldExpression,
 };
-use std::mem::MaybeUninit;
 use std::sync::OnceLock;
 
 use crate::inner_verifiers::unified_reduced::skeleton::{
@@ -55,7 +54,9 @@ use boojum::gadgets::tables::create_range_check_16_bits_table;
 use risc_verifier::prover::prover_stages::Proof as RiscProof;
 use risc_verifier::prover::prover_stages::unrolled_prover::UnrolledModeProof as RiscUnrolledProof;
 
-use execution_utils::{RecursionArtifact, RecursionLayer, unrolled::UnrolledProgramProof};
+use execution_utils::{
+    RecursionLayer, unrolled::UnrolledProgramProof, verifier_binaries::recursion_end_params,
+};
 
 const NUM_RISC_WRAPPER_PUBLIC_INPUTS: usize = 4;
 
@@ -79,17 +80,24 @@ pub struct BinaryCommitment {
     pub aux_params: [u32; 8],
 }
 
+fn padded_program(bytes: &[u8]) -> Vec<u8> {
+    let mut padded = bytes.to_vec();
+    setups::pad_bytecode_bytes_for_proving(&mut padded);
+    padded
+}
+
+fn base_end_params(bin: &[u8], text: &[u8]) -> [u32; 8] {
+    use execution_utils::unrolled::compute_setup_for_machine_configuration;
+    use risc_verifier::prover::riscv_transpiler::cycle::IMStandardIsaConfigWithUnsignedMulDiv;
+    compute_setup_for_machine_configuration::<IMStandardIsaConfigWithUnsignedMulDiv>(
+        &padded_program(bin),
+        &padded_program(text),
+    )
+    .end_params
+}
+
 impl BinaryCommitment {
-    /// Build from all three layer binaries explicitly:
-    /// 1. the base program (e.g. zksync_os app),
-    /// 2. the unrolled-recursion verifier,
-    /// 3. the unified-recursion verifier.
-    ///
-    /// `aux_params` is the Blake2s recursion-chain hash folded over the layer
-    /// `end_params` in order (base -> unrolled). The top unified verifier does
-    /// not fold its own `end_params` into the chain it exposes, so `aux_params`
-    /// stops at the unrolled layer. This is the binary chain commitment the top
-    /// verifier exposes in its final registers 18..=25.
+    /// Derive the commitment independently from the three supplied programs.
     pub fn from_binaries(
         base_bin: &[u8],
         base_text: &[u8],
@@ -99,98 +107,53 @@ impl BinaryCommitment {
         unified_text: &[u8],
     ) -> Self {
         use execution_utils::unified_circuit::compute_unified_setup_for_machine_configuration;
-        use execution_utils::unrolled::{
-            UnrolledProgramSetup, compute_setup_for_machine_configuration,
-        };
-        use risc_verifier::prover::riscv_transpiler::cycle::{
-            IMStandardIsaConfigWithUnsignedMulDiv, IWithoutByteAccessIsaConfigWithDelegation,
-        };
+        use execution_utils::unrolled::compute_setup_for_machine_configuration;
+        use risc_verifier::prover::riscv_transpiler::cycle::IWithoutByteAccessIsaConfigWithDelegation;
 
-        fn padded(bytes: &[u8]) -> Vec<u8> {
-            let mut v = bytes.to_vec();
-            setups::pad_bytecode_bytes_for_proving(&mut v);
-            v
-        }
-
-        let padded_base_bin = padded(base_bin);
-        let padded_base_text = padded(base_text);
-        let padded_unrolled_bin = padded(unrolled_bin);
-        let padded_unrolled_text = padded(unrolled_text);
-        let padded_unified_bin = padded(unified_bin);
-        let padded_unified_text = padded(unified_text);
-
-        let base_setup = compute_setup_for_machine_configuration::<
-            IMStandardIsaConfigWithUnsignedMulDiv,
-        >(&padded_base_bin, &padded_base_text);
-        let unrolled_setup = compute_setup_for_machine_configuration::<
+        let base = base_end_params(base_bin, base_text);
+        let unrolled =
+            compute_setup_for_machine_configuration::<IWithoutByteAccessIsaConfigWithDelegation>(
+                &padded_program(unrolled_bin),
+                &padded_program(unrolled_text),
+            )
+            .end_params;
+        let unified = compute_unified_setup_for_machine_configuration::<
             IWithoutByteAccessIsaConfigWithDelegation,
-        >(&padded_unrolled_bin, &padded_unrolled_text);
-        let unified_setup = compute_unified_setup_for_machine_configuration::<
-            IWithoutByteAccessIsaConfigWithDelegation,
-        >(&padded_unified_bin, &padded_unified_text);
-
-        // The chain the top verifier exposes in registers 18..=25: base -> unrolled -> unified.
-        // Measured against real airbender v0.6.0-rc.1 proofs, those registers hold the full
-        // chain (same value as registers 8..=15), so stopping at `unrolled` rejects every
-        // real proof. `RiscWrapperWitness::from_full_proof` checks this against the proof.
-        let (h1, p1) = UnrolledProgramSetup::begin_recursion_chain(&base_setup.end_params);
-        let (h2, p2) =
-            UnrolledProgramSetup::continue_recursion_chain(&unrolled_setup.end_params, &h1, &p1);
-        let (aux_params, _) =
-            UnrolledProgramSetup::continue_recursion_chain(&unified_setup.end_params, &h2, &p2);
-
-        Self {
-            end_params: unified_setup.end_params,
-            aux_params,
-        }
+        >(&padded_program(unified_bin), &padded_program(unified_text))
+        .end_params;
+        Self::from_layer_end_params(base, unrolled, unified)
     }
 
-    /// Build from the base program only; pulls the unrolled / unified
-    /// verifier binaries from `execution_utils::verifier_binaries`.
+    /// Derive the application setup while reusing the embedded recursion setup summaries.
     pub fn from_base_binary(base_bin: &[u8], base_text: &[u8]) -> Self {
         let security = crate::active_security::ACTIVE_SECURITY_MODEL;
-        let load = |layer, artifact| {
-            execution_utils::verifier_binaries::recursion_artifact(security, layer, artifact)
-        };
-        Self::from_binaries(
-            base_bin,
-            base_text,
-            load(RecursionLayer::Unrolled, RecursionArtifact::Bin),
-            load(RecursionLayer::Unrolled, RecursionArtifact::Txt),
-            load(RecursionLayer::Unified, RecursionArtifact::Bin),
-            load(RecursionLayer::Unified, RecursionArtifact::Txt),
+        Self::from_layer_end_params(
+            base_end_params(base_bin, base_text),
+            recursion_end_params(security, RecursionLayer::Unrolled),
+            recursion_end_params(security, RecursionLayer::Unified),
         )
+    }
+
+    fn from_layer_end_params(base: [u32; 8], unrolled: [u32; 8], unified: [u32; 8]) -> Self {
+        use execution_utils::unrolled::UnrolledProgramSetup;
+        // Registers 18..=25 bind the base application and both recursion programs in execution order.
+        let (h1, p1) = UnrolledProgramSetup::begin_recursion_chain(&base);
+        let (h2, p2) = UnrolledProgramSetup::continue_recursion_chain(&unrolled, &h1, &p1);
+        let (aux_params, _) = UnrolledProgramSetup::continue_recursion_chain(&unified, &h2, &p2);
+        Self {
+            end_params: unified,
+            aux_params,
+        }
     }
 }
 
 impl Default for BinaryCommitment {
-    /// `end_params` from the default unified-recursion verifier binary, with a
-    /// zero `aux_params`. Use when `check_aux_params` is disabled — the base
-    /// program bin/text is then unnecessary (`aux_params` is never consumed).
     fn default() -> Self {
-        use execution_utils::unified_circuit::compute_unified_setup_for_machine_configuration;
-        use risc_verifier::prover::riscv_transpiler::cycle::IWithoutByteAccessIsaConfigWithDelegation;
-
-        let security = crate::active_security::ACTIVE_SECURITY_MODEL;
-        let load = |artifact| {
-            execution_utils::verifier_binaries::recursion_artifact(
-                security,
-                RecursionLayer::Unified,
-                artifact,
-            )
-        };
-
-        let mut unified_bin = load(RecursionArtifact::Bin).to_vec();
-        setups::pad_bytecode_bytes_for_proving(&mut unified_bin);
-        let mut unified_text = load(RecursionArtifact::Txt).to_vec();
-        setups::pad_bytecode_bytes_for_proving(&mut unified_text);
-
-        let unified_setup = compute_unified_setup_for_machine_configuration::<
-            IWithoutByteAccessIsaConfigWithDelegation,
-        >(&unified_bin, &unified_text);
-
         Self {
-            end_params: unified_setup.end_params,
+            end_params: recursion_end_params(
+                crate::active_security::ACTIVE_SECURITY_MODEL,
+                RecursionLayer::Unified,
+            ),
             aux_params: [0u32; 8],
         }
     }
@@ -658,10 +621,6 @@ pub(crate) fn prepare_proof_for_wrapper<
     (skeleton, queries)
 }
 
-#[allow(invalid_value)]
-// Kept for ad-hoc debugging of the inner verifier outside the main proving
-// pipeline, which now relies on explicit top-level verification methods.
-#[allow(dead_code)]
 pub(crate) fn verify_risc_proof<V: LeafInclusionVerifier>(
     proof: &RiscUnrolledProof,
 ) -> (
@@ -676,20 +635,10 @@ pub(crate) fn verify_risc_proof<V: LeafInclusionVerifier>(
 ) {
     set_iterator_from_unrolled_proof(proof, unified_reduced_compiled_circuit());
 
-    let mut proof_state_dst = unsafe {
-        MaybeUninit::<
-            ProofOutput<
-                TREE_CAP_SIZE,
-                NUM_COSETS,
-                NUM_DELEGATION_CHALLENGES,
-                NUM_AUX_BOUNDARY_VALUES,
-                NUM_MACHINE_STATE_PERMUTATION_CHALLENGES,
-            >,
-        >::uninit()
-        .assume_init()
-    };
-    let mut proof_input_dst =
-        unsafe { MaybeUninit::<ProofPublicInputs<NUM_STATE_ELEMENTS>>::uninit().assume_init() };
+    // SYSCOIN: Verification receives typed references, so even output storage must
+    // contain valid values before the verifier writes its results.
+    let mut proof_state_dst = ProofOutput::empty();
+    let mut proof_input_dst = ProofPublicInputs::uninit();
 
     unsafe {
         risc_verifier::verify_with_configuration::<
@@ -713,7 +662,7 @@ pub(crate) fn set_iterator_from_unrolled_proof(
 
     let it = oracle_data.into_iter();
 
-    risc_verifier::prover::nd_source_std::set_iterator(it.clone());
+    risc_verifier::prover::nd_source_std::set_iterator(it);
 }
 
 // The compiled layout is immutable generated data, so parsing it once per
@@ -747,7 +696,7 @@ pub(crate) fn set_iterator_from_proof(
 
     let it = oracle_data.into_iter();
 
-    risc_verifier::prover::nd_source_std::set_iterator(it.clone());
+    risc_verifier::prover::nd_source_std::set_iterator(it);
 }
 
 use crate::inner_verifiers::blake_delegation::WrappedBlakeProofOutput;

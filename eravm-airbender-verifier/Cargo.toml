@@ -101,34 +101,20 @@ ark-bls12-381 = { version = "0.5", default-features = false, features = ["scalar
 
 # Protocol and VM dependencies
 #
-# This airbender-platform revision takes its airbender crates from zksync-airbender
-# by `rev = "0decdcdb"`, matching `cli_lib` below and `../zkos-wrapper/`. It is
-# built for nightly-2026-08-09, so this workspace shares the repository-root
-# `rust-toolchain` and keeps no pin of its own.
-#
-# All three specs have to stay identical, and this is the workspace that proves it:
-# cargo keys a git source by URL *and* ref, `../zkos-wrapper/` is a *path*
-# dependency here, so a ref it names and this one does not lands in this graph as a
-# second copy of all 44 airbender crates rather than staying out of it. The two
-# copies then meet in `host/src/snark.rs`, where `RawFriProof`
-# (`airbender_host::raw::UnrolledProgramProof`) is handed to
-# `SnarkWrapper::prove_risc_wrapper`, and that call stops typechecking -- E0308,
-# "expected `UnrolledProgramProof`, found a different `UnrolledProgramProof`".
-# Nothing here can paper over it: cargo refuses to patch a source with itself.
-# Move all three together.
-airbender = { package = "airbender-sdk", git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
-airbender-codec = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
+# The root patch below keeps the platform and the wrapper on the same Airbender types.
+airbender = { package = "airbender-sdk", git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
+airbender-codec = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
 # `default-features = false` drops airbender-host's default `gpu-prover` (the
 # CUDA `gpu_prover` crate). Consumers re-enable it through their own `gpu_fri`
 # feature; a `--no-default-features` build stays CUDA-free. Must live on the
 # workspace dep — a member's `default-features = false` is otherwise ignored.
-airbender-host = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc", default-features = false }
-airbender-crypto = { git = "https://github.com/matter-labs/airbender-platform", rev = "b6ce3dd1252bfbda8e42b77fdd868e81c54b7bdc" }
+airbender-host = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79", default-features = false }
+airbender-crypto = { git = "https://github.com/syscoin/airbender-platform", rev = "3b042ed82cb4f454860f8ef12634942a80326c79" }
 # zksync-airbender's CLI crate, for `CarriedChainCombiner::advance_carried_chain`
 # only. Same git source and rev as the airbender crates `airbender-platform` above
 # and `../zkos-wrapper/` pull, so there is one `execution_utils` in this
 # workspace's graph. Goes when the combiner is reachable through `airbender-host`.
-cli_lib = { package = "cli", git = "https://github.com/matter-labs/zksync-airbender", rev = "0decdcdb", default-features = false }
+cli_lib = { package = "cli", git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870", default-features = false }
 # Vendored into this repository, so these resolve through `../protocol/crates/`
 # rather than a git tag: a protocol change and the verifier change it forces land
 # in one commit, and CI builds the guest against the working tree.
@@ -185,3 +171,12 @@ debug = 0
 debug = 0
 [profile.release.package.setups]
 debug = 0
+
+[patch."https://github.com/matter-labs/zksync-airbender"]
+blake2s_u32 = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+common_constants = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+execution_utils = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+gpu_prover = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+riscv_transpiler = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+verifier_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }
+riscv_common = { git = "https://github.com/syscoin/zksync-airbender", rev = "5e0cf077116afa7d1b733fa972fedb3b29594870" }

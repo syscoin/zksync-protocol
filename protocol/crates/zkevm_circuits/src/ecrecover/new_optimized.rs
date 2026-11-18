@@ -8,7 +8,7 @@ use crate::fsm_input_output::circuit_inputs::INPUT_OUTPUT_COMMITMENT_LENGTH;
 
 use arrayvec::ArrayVec;
 use boojum::algebraic_props::round_function::AlgebraicRoundFunction;
-use boojum::crypto_bigint::{Zero, U1024};
+use boojum::crypto_bigint::U1024;
 use boojum::cs::gates::ConstantAllocatableCS;
 use boojum::cs::traits::cs::ConstraintSystem;
 use boojum::cs::Variable;
@@ -146,7 +146,7 @@ where
 
     assert!(overflows.lt(&U1024::from_word(1u64 << 32)));
     let mut max_moduluses = overflows.as_words()[0] as u32;
-    if rem.is_zero().unwrap_u8() != 1 {
+    if !rem.is_zero().to_bool() {
         max_moduluses += 1;
     }
 
@@ -198,7 +198,7 @@ fn convert_uint256_to_field_element<
     let (overflows, rem) = max_value.div_rem(&params.modulus_u1024);
     assert!(overflows.lt(&U1024::from_word(1u64 << 32)));
     let mut max_moduluses = overflows.as_words()[0] as u32;
-    if rem.is_zero().unwrap_u8() != 1 {
+    if !rem.is_zero().to_bool() {
         max_moduluses += 1;
     }
 

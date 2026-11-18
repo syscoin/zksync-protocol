@@ -195,6 +195,7 @@ impl<
     }
 }
 
+/// The expected proof configuration is trusted circuit policy, not proof metadata.
 pub fn verify_circuit<
     F: SmallField,
     C: Circuit<F>,
@@ -207,6 +208,7 @@ pub fn verify_circuit<
     proof: &Proof<F, H, EXT>,
     vk: &VerificationKey<F, H>,
     transcript_params: TR::TransciptParameters,
+    expected_proof_config: &ProofConfig,
 ) -> bool {
     let builder_impl =
         CsVerifierBuilder::<F, EXT>::new_from_parameters(vk.fixed_parameters.parameters);
@@ -216,5 +218,5 @@ pub fn verify_circuit<
     let builder = circuit.configure_builder(builder);
 
     let verifier = builder.build(());
-    verifier.verify::<H, TR, POW>(transcript_params, vk, proof)
+    verifier.verify::<H, TR, POW>(transcript_params, vk, proof, expected_proof_config)
 }

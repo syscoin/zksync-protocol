@@ -63,8 +63,8 @@ impl<F: SmallField> CSAllocatableExt<F> for Boolean<F> {
     where
         [(); Self::INTERNAL_STRUCT_LEN]:,
     {
-        let mut result: [Variable; Self::INTERNAL_STRUCT_LEN] =
-            unsafe { std::mem::MaybeUninit::uninit().assume_init() };
+        // SYSCOIN: Typed arrays must be valid before field-wise assignment.
+        let mut result = [Variable::placeholder(); Self::INTERNAL_STRUCT_LEN];
         result[0] = self.variable;
         result
     }

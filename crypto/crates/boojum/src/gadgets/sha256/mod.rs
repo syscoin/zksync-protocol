@@ -546,7 +546,7 @@ pub(crate) mod test {
             &setup,
             &setup_tree,
             &vk,
-            prover_config,
+            prover_config.clone(),
             (),
         );
 
@@ -558,7 +558,7 @@ pub(crate) mod test {
         let builder = configure(builder);
         let verifier = builder.build(());
 
-        let is_valid = verifier.verify::<T, TR, NoPow>((), &vk, &proof);
+        let is_valid = verifier.verify::<T, TR, NoPow>((), &vk, &proof, &prover_config);
 
         assert!(is_valid, "freshly produced proof must verify");
         (proof, vk)

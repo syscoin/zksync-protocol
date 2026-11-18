@@ -282,7 +282,12 @@ pub fn verify_base_layer_proof<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = dyn_verifier_builder_for_circuit_type(circuit.numeric_circuit_type());
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<H, TR, POW>((), vk, proof)
+    verifier.verify::<H, TR, POW>(
+        (),
+        vk,
+        proof,
+        &circuit_definitions::base_layer_proof_config(),
+    )
 }
 
 pub fn verify_base_layer_proof_for_type<POW: PoWRunner>(
@@ -292,7 +297,12 @@ pub fn verify_base_layer_proof_for_type<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = dyn_verifier_builder_for_circuit_type(circuit_type);
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<H, TR, POW>((), vk, proof)
+    verifier.verify::<H, TR, POW>(
+        (),
+        vk,
+        proof,
+        &circuit_definitions::base_layer_proof_config(),
+    )
 }
 
 pub fn create_recursive_layer_setup_data(
@@ -431,7 +441,12 @@ pub fn verify_recursion_layer_proof<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = circuit.into_dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<H, TR, POW>((), vk, proof)
+    verifier.verify::<H, TR, POW>(
+        (),
+        vk,
+        proof,
+        &circuit_definitions::recursion_layer_proof_config(),
+    )
 }
 
 pub fn verify_recursion_layer_proof_for_type<POW: PoWRunner>(
@@ -441,7 +456,12 @@ pub fn verify_recursion_layer_proof_for_type<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = dyn_verifier_builder_for_recursive_circuit_type(circuit_type);
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<H, TR, POW>((), vk, proof)
+    verifier.verify::<H, TR, POW>(
+        (),
+        vk,
+        proof,
+        &circuit_definitions::recursion_layer_proof_config(),
+    )
 }
 
 pub fn create_compression_layer_setup_data(
@@ -548,7 +568,7 @@ pub fn verify_compression_layer_proof<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = circuit.into_dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<H, TR, POW>((), vk, proof)
+    verifier.verify::<H, TR, POW>((), vk, proof, &circuit.proof_config_for_compression_step())
 }
 
 pub type TreeHasherForWrapper = Poseidon2Sponge<Bn256, F, AbsorptionModeReplacement<Fr>, 2, 3>;
@@ -659,5 +679,10 @@ pub fn verify_compression_for_wrapper_proof<POW: PoWRunner>(
 ) -> bool {
     let verifier_builder = circuit.into_dyn_verifier_builder();
     let verifier = verifier_builder.create_verifier();
-    verifier.verify::<TreeHasherForWrapper, TranscriptForWrapper, POW>((), vk, proof)
+    verifier.verify::<TreeHasherForWrapper, TranscriptForWrapper, POW>(
+        (),
+        vk,
+        proof,
+        &circuit.proof_config_for_compression_step(),
+    )
 }

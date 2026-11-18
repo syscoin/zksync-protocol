@@ -1395,7 +1395,8 @@ fn run_single() {
     let vk = source.get_recursion_layer_node_vk().unwrap().into_inner();
 
     for (idx, proof) in inner.witness.proof_witnesses.iter().enumerate() {
-        let is_valid = verifier.verify::<H, TR, NoPow>((), &vk, &proof);
+        let is_valid =
+            verifier.verify::<H, TR, NoPow>((), &vk, &proof, &recursion_layer_proof_config());
         assert!(is_valid, "failed at step {}", idx);
     }
 
@@ -1406,7 +1407,8 @@ fn run_single() {
             .get_node_layer_proof(circuit_type, 0, 0)
             .unwrap()
             .into_inner();
-        let is_valid = verifier.verify::<H, TR, NoPow>((), &vk, &proof);
+        let is_valid =
+            verifier.verify::<H, TR, NoPow>((), &vk, &proof, &recursion_layer_proof_config());
         assert!(is_valid, "failed for circuit type {}", circuit_type);
     }
 

@@ -117,10 +117,6 @@ use crate::inner_verifiers::blake_delegation::prover::definitions::LeafInclusion
 use crate::inner_verifiers::blake_delegation::verifier_common::ProofOutput;
 use blake_verifier::*;
 
-#[allow(invalid_value)]
-// Kept for ad-hoc debugging of the delegated proof outside the main wrapping
-// pipeline, which now verifies explicitly at the outer API boundary.
-#[allow(dead_code)]
 pub(crate) fn verify_blake_proof<V: LeafInclusionVerifier>(
     proof: &RiscProof,
 ) -> (
@@ -133,19 +129,10 @@ pub(crate) fn verify_blake_proof<V: LeafInclusionVerifier>(
         .len();
     set_iterator_from_proof(proof, shuffle_ram_inits_and_teardowns_len);
 
-    let mut proof_state_dst = unsafe {
-        MaybeUninit::<
-            ProofOutput<
-                TREE_CAP_SIZE,
-                NUM_COSETS,
-                NUM_DELEGATION_CHALLENGES,
-                NUM_AUX_BOUNDARY_VALUES,
-            >,
-        >::uninit()
-        .assume_init()
-    };
-    let mut proof_input_dst =
-        unsafe { MaybeUninit::<ProofPublicInputs<NUM_STATE_ELEMENTS>>::uninit().assume_init() };
+    // SYSCOIN: These are live host verification outputs, not uninitialized backing
+    // storage; passing typed references requires valid values before verification.
+    let mut proof_state_dst = ProofOutput::empty();
+    let mut proof_input_dst = ProofPublicInputs::uninit();
 
     unsafe {
         blake_verifier::verify_with_configuration::<ActiveSecurity, ThreadLocalBasedSource, V>(

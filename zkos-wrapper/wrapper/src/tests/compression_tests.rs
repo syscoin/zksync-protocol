@@ -1,6 +1,32 @@
 use super::*;
 
 #[test]
+fn compression_synthesis_fits_row_budget() {
+    use crate::circuits::CompressionCircuit;
+    use boojum::config::SetupCSConfig;
+    use boojum::cs::cs_builder::new_builder;
+    use boojum::cs::cs_builder_reference::CsReferenceImplementationBuilder;
+    use boojum::cs::traits::{circuit::CircuitBuilder, cs::ConstraintSystem};
+    use boojum::dag::StCircuitResolver;
+
+    let vk = deserialize_from_bin_file(RISC_WRAPPER_VK_PATH).unwrap();
+    let circuit = CompressionCircuit::new(None, vk);
+    let (rows, variables) = circuit.size_hint();
+    let reference =
+        CsReferenceImplementationBuilder::<F, F, SetupCSConfig, StCircuitResolver<_, _>>::new(
+            CompressionCircuit::geometry(),
+            rows.unwrap(),
+        );
+    let builder = CompressionCircuit::configure_builder(new_builder::<_, F>(reference));
+    let mut cs = builder.build(variables.unwrap());
+    circuit.synthesize_into_cs(&mut cs);
+    let occupied = cs.next_available_row();
+    let (padded, _) = cs.pad_and_shrink();
+    eprintln!("compression occupied rows {occupied}, padded rows {padded}");
+    assert!(occupied <= padded && padded <= rows.unwrap());
+}
+
+#[test]
 pub(crate) fn compression_full_test() {
     let worker = boojum::worker::Worker::new();
 

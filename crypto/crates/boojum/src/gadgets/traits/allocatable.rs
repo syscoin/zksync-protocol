@@ -151,3 +151,86 @@ pub fn allocate_num_elements<F: SmallField, CS: ConstraintSystem<F>, EL: CSAlloc
 
     result
 }
+
+#[cfg(test)]
+mod initialized_gadget_arrays {
+    use super::CSAllocatableExt;
+    use crate::cs::Variable;
+    use crate::field::{goldilocks::GoldilocksField as F, U64Representable};
+    use crate::gadgets::{
+        boolean::Boolean,
+        num::Num,
+        u16::UInt16,
+        u160::{decompose_address_as_u32x5, UInt160},
+        u256::{decompose_u256_as_u32x8, UInt256},
+        u32::UInt32,
+        u512::{decompose_u512_as_u32x16, UInt512},
+        u8::UInt8,
+    };
+    use std::marker::PhantomData;
+
+    #[test]
+    fn scalar_variable_outputs_preserve_the_variable() {
+        // SYSCOIN: Inspect variable ordering directly without introducing any
+        // constraint-system allocation that could mask a placeholder leak.
+        let variable = Variable::from_variable_index(19);
+        macro_rules! check {
+            ($gadget:ident) => {
+                let value = $gadget::<F> {
+                    variable,
+                    _marker: PhantomData,
+                };
+                assert_eq!(value.flatten_as_variables(), [variable]);
+            };
+        }
+        check!(Boolean);
+        check!(Num);
+        check!(UInt8);
+        check!(UInt16);
+        check!(UInt32);
+    }
+
+    #[test]
+    fn limb_variable_outputs_preserve_every_position() {
+        macro_rules! check {
+            ($gadget:ident, $length:expr) => {
+                let variables: [_; $length] =
+                    std::array::from_fn(|i| Variable::from_variable_index((17 + i) as u64));
+                let value = $gadget::<F> {
+                    inner: variables.map(|variable| UInt32 {
+                        variable,
+                        _marker: PhantomData,
+                    }),
+                };
+                assert_eq!(value.flatten_as_variables(), variables);
+            };
+        }
+        check!(UInt160, 5);
+        check!(UInt256, 8);
+        check!(UInt512, 16);
+    }
+
+    #[test]
+    fn limb_witness_outputs_preserve_zero_maximum_and_distinct_words() {
+        // SYSCOIN: Exercise all formerly uninitialized integer arrays at both
+        // word boundaries and with asymmetric limbs to detect ordering changes.
+        macro_rules! check {
+            ($gadget:ident, $length:expr, $decompose:ident) => {
+                for pattern in 0..3 {
+                    let words: [u32; $length] = std::array::from_fn(|i| match pattern {
+                        0 => 0,
+                        1 => u32::MAX,
+                        _ => 0x1234_0000 + i as u32 * 0x101,
+                    });
+                    let fields = words.map(|word| F::from_u64_unchecked(u64::from(word)));
+                    let witness =
+                        <$gadget<F> as CSAllocatableExt<F>>::witness_from_set_of_values(fields);
+                    assert_eq!($decompose(witness), words);
+                }
+            };
+        }
+        check!(UInt160, 5, decompose_address_as_u32x5);
+        check!(UInt256, 8, decompose_u256_as_u32x8);
+        check!(UInt512, 16, decompose_u512_as_u32x16);
+    }
+}

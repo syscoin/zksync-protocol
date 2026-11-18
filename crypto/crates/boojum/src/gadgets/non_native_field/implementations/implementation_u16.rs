@@ -11,7 +11,6 @@ use crate::gadgets::traits::allocatable::CSAllocatable;
 use crate::gadgets::traits::castable::WitnessCastable;
 use crate::gadgets::traits::selectable::Selectable;
 use crate::gadgets::traits::witnessable::{CSWitnessable, WitnessHookable};
-use crypto_bigint::CheckedMul;
 use serde::de::{SeqAccess, Visitor};
 use serde::{de, Deserialize, Deserializer, Serialize};
 use std::fmt;
@@ -435,7 +434,7 @@ where
         let q_max_value = lhs_max
             .checked_div(self.params.modulus_u1024.as_ref())
             .unwrap();
-        let q_max_value_bits = q_max_value.bits_vartime();
+        let q_max_value_bits = q_max_value.bit_width_vartime() as usize;
         let mut q_max_words = q_max_value_bits / 16;
         if q_max_value_bits % 16 != 0 {
             q_max_words += 1;
@@ -1233,7 +1232,7 @@ impl<F: SmallField, T: pairing::ff::PrimeField, const N: usize> WitnessCastable<
         // note that we do not make a judgement about reduction here, so it's kind of expecnsive
         let mut modulus_u1024 = U1024::ZERO;
         for (dst, src) in modulus_u1024
-            .as_words_mut()
+            .as_mut_words()
             .iter_mut()
             .zip(T::char().as_ref())
         {
@@ -1242,9 +1241,13 @@ impl<F: SmallField, T: pairing::ff::PrimeField, const N: usize> WitnessCastable<
         let modulus_u1024 = NonZero::<U1024>::new(modulus_u1024).unwrap();
 
         let mut value = U1024::ZERO;
-        for (idx, el) in witness.into_iter().enumerate() {
+        for (idx, el) in witness
+            .into_iter()
+            .take((U1024::BITS / 16) as usize)
+            .enumerate()
+        {
             let tmp = U1024::from_word(el.as_u64_reduced());
-            value = value.wrapping_add(&tmp.shl_vartime(idx * 16));
+            value = value.wrapping_add(&tmp.shl_vartime(idx as u32 * 16));
         }
 
         let (_, rem) = value.div_rem(&modulus_u1024);

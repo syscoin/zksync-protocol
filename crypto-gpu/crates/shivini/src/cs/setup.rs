@@ -206,12 +206,14 @@ pub fn gpu_setup_and_vk_from_base_setup_vk_params_and_hints<
     let domain_size = base_setup.copy_permutation_polys[0].domain_size();
     let layout = SetupLayout::from_base_setup_and_hints(&base_setup);
     let SetupBaseStorage {
+        copy_permutation_polys,
         constant_columns,
         lookup_tables_columns,
         table_ids_column_idxes,
         selectors_placement,
-        ..
     } = base_setup;
+    // The device reconstructs these columns from the hints. Only their geometry is needed here.
+    drop(copy_permutation_polys);
     let constant_columns = constant_columns
         .iter()
         .map(|src| {

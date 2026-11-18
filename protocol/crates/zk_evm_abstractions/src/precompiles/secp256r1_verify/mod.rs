@@ -39,6 +39,16 @@ trait Secp256r1Backend {
     ) -> Result<bool, ()>;
 }
 
+fn parse_public_key(
+    x: &[u8; 32],
+    y: &[u8; 32],
+) -> Result<zkevm_opcode_defs::p256::ecdsa::VerifyingKey, ()> {
+    use zkevm_opcode_defs::p256::{ecdsa::VerifyingKey, Sec1Point};
+
+    let encoded = Sec1Point::from_affine_coordinates(x.into(), y.into(), false);
+    VerifyingKey::from_sec1_point(&encoded).map_err(|_| ())
+}
+
 fn execute_secp256r1_precompile<M: Memory, Backend: Secp256r1Backend, const B: bool>(
     monotonic_cycle_counter: u32,
     query: LogQuery,

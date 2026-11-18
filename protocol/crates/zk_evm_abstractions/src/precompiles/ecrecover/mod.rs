@@ -155,7 +155,7 @@ fn u256_to_bytes32(value: U256) -> [u8; 32] {
 }
 
 fn verifying_key_to_address(verifying_key: &VerifyingKey) -> U256 {
-    let encoded = verifying_key.to_encoded_point(false);
+    let encoded = verifying_key.to_sec1_point(false);
     let encoded_ref = encoded.as_bytes();
     let address_hash = sha3::Keccak256::digest(&encoded_ref[1..]);
 

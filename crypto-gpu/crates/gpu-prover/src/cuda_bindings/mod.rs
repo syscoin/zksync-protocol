@@ -19,6 +19,7 @@ mod device_buf;
 mod device_heavy_ops;
 mod error;
 mod event;
+mod msm;
 mod stream;
 
 // pub use async_vec::*;
